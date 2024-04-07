@@ -12,7 +12,7 @@ blueprint:
     It is currently commented out in the code and can be activated when needed.
     
   domain: automation
-  source_url: https://github.com/cupracer/homeassistant-stuff/blueprints/lower-radiator-temperature-with-opened-closure.yaml
+  source_url: https://github.com/cupracer/homeassistant-stuff/blueprints/reset-radiator-temperature-with-closed-closure.yaml
   
   input:
     contact_entity:
@@ -23,9 +23,9 @@ blueprint:
           domain: binary_sensor
           device_class: [window, door]
 
-    open_delay:
-      name: Open Wait Time
-      description: Time to delay after contact opens before notifying HomeMatic.
+    close_delay:
+      name: Close Wait Time
+      description: Time to delay after contact closes before notifying HomeMatic.
       default: 0
       selector:
         number:
@@ -54,13 +54,13 @@ variables:
 #  blocking_entity: !input blocking_entity
   climate_target: !input climate_entity
   climate_address: '{{ state_attr( climate_target, "address").split(":")[0] }}'
-  open_delay: !input open_delay
+  close_delay: !input close_delay
 
 trigger:
   - platform: state
     entity_id: !input "contact_entity"
-    to: "on"
-    for: !input "open_delay"
+    to: "off"
+    for: !input "close_delay"
 
 # condition:
 #   - condition: template
@@ -72,7 +72,7 @@ action:
       device_address: "{{ climate_address }}"
       channel: 1
       parameter: WINDOW_STATE
-      value: "1"
+      value: "0"
       value_type: int
 
 mode: restart
