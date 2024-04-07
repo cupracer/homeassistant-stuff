@@ -6,7 +6,6 @@ blueprint:
     It utilizes the Homematic window sensor channel to adjust the temperature to the 
     "open window temperature" specified in the device configuration. 
     To avoid conflicts, you should set the "Mode for temperature fall detection" to Inactive. 
-    It waits until the contact is closed again to restore the climate entity's temperature. 
     Additionally, there's an optional blocking entity to prevent the automation 
     from running unnecessarily, such as during the summer season.
     It is currently commented out in the code and can be activated when needed.

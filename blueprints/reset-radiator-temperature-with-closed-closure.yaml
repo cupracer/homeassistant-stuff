@@ -1,12 +1,8 @@
 blueprint:
-  name: Lower radiator temperature with opened closure
+  name: Reset radiator temperature with closed closure
   description:
-    An automation blueprint that lowers the set temperature of your climate device or group 
-    when a contact sensor remains open for longer than the predefined wait time. 
-    It utilizes the Homematic window sensor channel to adjust the temperature to the 
-    "open window temperature" specified in the device configuration. 
-    To avoid conflicts, you should set the "Mode for temperature fall detection" to Inactive. 
-    It waits until the contact is closed again to restore the climate entity's temperature. 
+    An automation blueprint that resets the set temperature of your climate device or group 
+    when a contact sensor was closed for longer than the predefined wait time. 
     Additionally, there's an optional blocking entity to prevent the automation 
     from running unnecessarily, such as during the summer season.
     It is currently commented out in the code and can be activated when needed.
