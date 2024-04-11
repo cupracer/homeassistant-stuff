@@ -152,8 +152,6 @@ blueprint:
           unit_of_measurement: "%"
 
 variables:
-  target_light: !input 'target_light'
-  brightness: !input 'brightness'
   morning_start: !input 'morning_start'
   morning_end: !input 'morning_end'
   evening_start: !input 'evening_start'
