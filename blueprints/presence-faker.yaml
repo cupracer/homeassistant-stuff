@@ -1,0 +1,247 @@
+blueprint:
+  name: Presence Faker
+  description: Simulates presence by randomly turning lights on and off during defined morning, evening, and optionally night hours, with configurable durations and flexible timing offsets. Shade conditions are applied based on selected entities.
+  domain: automation
+  input:
+    target_light:
+      name: Target Light
+      description: The lighting group to be controlled.
+      selector:
+        target:
+          entity:
+            domain: light
+    brightness:
+      name: Brightness
+      description: Brightness level for the light (0-255).
+      default: 255
+      selector:
+        number:
+          min: 0
+          max: 255
+          mode: slider
+    morning_start:
+      name: Morning Start Time
+      description: Start time in the morning for the simulation (e.g., "05:30").
+      default: "05:30:00"
+      selector:
+        time: {}
+    morning_end:
+      name: Morning End Time
+      description: End time in the morning for the simulation (e.g., "08:30").
+      default: "08:30:00"
+      selector:
+        time: {}
+    evening_start:
+      name: Evening Start Time
+      description: Start time in the evening for the simulation (e.g., "17:00").
+      default: "17:00:00"
+      selector:
+        time: {}
+    evening_end:
+      name: Evening End Time
+      description: End time in the evening for the simulation (e.g., "23:30").
+      default: "23:30:00"
+      selector:
+        time: {}
+    night_start:
+      name: Night Start Time
+      description: Start time at night for optional light activation (e.g., "01:00").
+      default: "01:00:00"
+      selector:
+        time: {}
+    night_end:
+      name: Night End Time
+      description: End time at night for optional light activation (e.g., "05:00").
+      default: "05:00:00"
+      selector:
+        time: {}
+    timing_variation:
+      name: Timing Variation
+      description: Maximum number of minutes by which start and end times can randomly vary each cycle (e.g., 15 minutes).
+      default: 15
+      selector:
+        number:
+          min: 0
+          max: 60
+          unit_of_measurement: "minutes"
+    start_delay_max:
+      name: Maximum Start Delay
+      description: Maximum delay before starting the light cycle (in minutes).
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 120
+          unit_of_measurement: "minutes"
+    morning_duration_min:
+      name: Minimum Morning Duration
+      description: Minimum duration each morning light cycle lasts (in minutes).
+      default: 5
+      selector:
+        number:
+          min: 5
+          max: 120
+          unit_of_measurement: "minuten"
+    morning_duration_max:
+      name: Maximum Morning Duration
+      description: Maximum duration each morning light cycle lasts (in minutes).
+      default: 15
+      selector:
+        number:
+          min: 15
+          max: 180
+          unit_of_measurement: "minutes"
+    evening_duration_min:
+      name: Minimum Evening Duration
+      description: Minimum duration each evening light cycle lasts (in minutes).
+      default: 5
+      selector:
+        number:
+          min: 5
+          max: 120
+          unit_of_measurement: "minutes"
+    evening_duration_max:
+      name: Maximum Evening Duration
+      description: Maximum duration each evening light cycle lasts (in minutes).
+      default: 15
+      selector:
+        number:
+          min: 15
+          max: 180
+          unit_of_measurement: "minutes"
+    night_duration_min:
+      name: Minimum Night Duration
+      description: Minimum duration each night light cycle lasts (in minutes), if activated.
+      default: 2
+      selector:
+        number:
+          min: 1
+          max: 3
+          unit_of_measurement: "minutes"
+    night_duration_max:
+      name: Maximum Night Duration
+      description: Maximum duration each night light cycle lasts (in minutes), if activated.
+      default: 10
+      selector:
+        number:
+          min: 5
+          max: 30
+          unit_of_measurement: "minutes"
+    automation_enabled:
+      name: Automation Enabled
+      description: Use this input_boolean to enable or disable the automation.
+      selector:
+        entity:
+          domain: input_boolean
+    shades_entities:
+      name: Shades Entities
+      description: Optional - List of shade entities to monitor, all must meet the position condition to activate simulation. Leave empty to disable.
+      default: {}
+      selector:
+        target:
+          entity:
+            domain: cover
+    shades_position:
+      name: Shades Position Condition
+      description: Minimum percentage the shades are considered closed sufficient to start the simulation. Only used if shades entities are selected.
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+
+variables:
+  target_light: !input 'target_light'
+  brightness: !input 'brightness'
+  morning_start: !input 'morning_start'
+  morning_end: !input 'morning_end'
+  evening_start: !input 'evening_start'
+  evening_end: !input 'evening_end'
+  night_start: !input 'night_start'
+  night_end: !input 'night_end'
+  timing_variation: !input 'timing_variation'
+  start_delay_max: !input 'start_delay_max'
+  morning_duration_min: !input 'morning_duration_min'
+  morning_duration_max: !input 'morning_duration_max'
+  evening_duration_min: !input 'evening_duration_min'
+  evening_duration_max: !input 'evening_duration_max'
+  night_duration_min: !input 'night_duration_min'
+  night_duration_max: !input 'night_duration_max'
+  automation_enabled: !input 'automation_enabled'
+  shades_entities: !input 'shades_entities'
+  shades_position: !input 'shades_position'
+
+trigger:
+  - platform: state
+    entity_id: !input 'automation_enabled'
+    to: 'on'
+  - platform: state
+    entity_id: !input 'automation_enabled'
+    to: 'off'
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ is_state(automation_enabled, 'on') }}"
+        sequence:
+          - repeat:
+              while:
+                - condition: template
+                  value_template: "{{ is_state(automation_enabled, 'on') }}"
+              sequence:
+                - choose:
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ now() > (today_at(morning_start) - timedelta(seconds=(timing_variation * 60))) and now() < (today_at(morning_end) + timedelta(seconds=(timing_variation * 60))) }}"
+                      sequence:
+                        - delay:
+                            seconds: "{{ range(0, start_delay_max * 60) | random }}"
+                        - service: light.turn_on
+                          target: !input 'target_light'
+                          data:
+                            brightness: !input 'brightness'
+                        - delay:
+                            seconds: "{{ range(morning_duration_min * 60, morning_duration_max * 60) | random }}"
+                        - service: light.turn_off
+                          target: !input 'target_light'
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ now() > (today_at(evening_start) - timedelta(seconds=(timing_variation * 60))) and now() < (today_at(evening_end) + timedelta(seconds=(timing_variation * 60))) }}"
+                      sequence:
+                        - delay:
+                            seconds: "{{ range(0, start_delay_max * 60) | random }}"
+                        - service: light.turn_on
+                          target: !input 'target_light'
+                          data:
+                            brightness: !input 'brightness'
+                        - delay:
+                            seconds: "{{ range(evening_duration_min * 60, evening_duration_max * 60) | random }}"
+                        - service: light.turn_off
+                          target: !input 'target_light'
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ now() > (today_at(night_start) - timedelta(seconds=(timing_variation * 60))) and now() < (today_at(night_end) + timedelta(seconds=(timing_variation * 60))) }}"
+                      sequence:
+                        - delay:
+                            seconds: "{{ range(0, start_delay_max * 60) | random }}"
+                        - service: light.turn_on
+                          target: !input 'target_light'
+                          data:
+                            brightness: !input 'brightness'
+                        - delay:
+                            seconds: "{{ range(night_duration_min * 60, night_duration_max * 60) | random }}"
+                        - service: light.turn_off
+                          target: !input 'target_light'
+                - delay:
+                    seconds: 1  # Loop delay to prevent high CPU usage
+      - conditions:
+          - condition: template
+            value_template: "{{ is_state(automation_enabled, 'off') }}"
+        sequence:
+          - service: light.turn_off
+            target: !input 'target_light'
+
