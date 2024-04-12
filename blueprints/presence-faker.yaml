@@ -64,9 +64,9 @@ blueprint:
           min: 0
           max: 60
           unit_of_measurement: "minutes"
-    start_delay_max:
-      name: Maximum Start Delay
-      description: Maximum delay before starting the light cycle (in minutes).
+    loop_delay_max:
+      name: Maximum Loop Delay
+      description: Maximum delay before switching to the next light cycle (in minutes).
       default: 30
       selector:
         number:
@@ -159,7 +159,7 @@ variables:
   night_start: !input 'night_start'
   night_end: !input 'night_end'
   timing_variation: !input 'timing_variation'
-  start_delay_max: !input 'start_delay_max'
+  loop_delay_max: !input 'loop_delay_max'
   morning_duration_min: !input 'morning_duration_min'
   morning_duration_max: !input 'morning_duration_max'
   evening_duration_min: !input 'evening_duration_min'
@@ -200,8 +200,6 @@ action:
                         - condition: template
                           value_template: "{{ shades_entities.entity_id | length == 0 or (expand(shades_entities.entity_id) | map(attribute='attributes.current_position') | map('int') | select('<=', shades_position) | list | count == expand(shades_entities.entity_id) | count) }}"
                       sequence:
-                        - delay:
-                            seconds: "{{ range(0, start_delay_max * 60) | random }}"
                         - service: light.turn_on
                           target: !input 'target_light'
                           data:
@@ -210,13 +208,13 @@ action:
                             seconds: "{{ range(morning_duration_min * 60, morning_duration_max * 60) | random }}"
                         - service: light.turn_off
                           target: !input 'target_light'
+                        - delay:
+                            seconds: "{{ range(0, loop_delay_max * 60) | random }}"
                     - alias: "Check if now() is within the evening time range AND if shade positions are <= the desired position (or not defined at all)"
                       conditions:
                         - condition: template
                           value_template: "{{ now() > (today_at(evening_start) - timedelta(seconds=(timing_variation * 60))) and now() < (today_at(evening_end) + timedelta(seconds=(timing_variation * 60))) }}"
                       sequence:
-                        - delay:
-                            seconds: "{{ range(0, start_delay_max * 60) | random }}"
                         - service: light.turn_on
                           target: !input 'target_light'
                           data:
@@ -225,13 +223,13 @@ action:
                             seconds: "{{ range(evening_duration_min * 60, evening_duration_max * 60) | random }}"
                         - service: light.turn_off
                           target: !input 'target_light'
+                        - delay:
+                            seconds: "{{ range(0, loop_delay_max * 60) | random }}"
                     - alias: "Check if now() is within the night time range AND if shade positions are <= the desired position (or not defined at all)"
                       conditions:
                         - condition: template
                           value_template: "{{ now() > (today_at(night_start) - timedelta(seconds=(timing_variation * 60))) and now() < (today_at(night_end) + timedelta(seconds=(timing_variation * 60))) }}"
                       sequence:
-                        - delay:
-                            seconds: "{{ range(0, start_delay_max * 60) | random }}"
                         - service: light.turn_on
                           target: !input 'target_light'
                           data:
@@ -240,6 +238,8 @@ action:
                             seconds: "{{ range(night_duration_min * 60, night_duration_max * 60) | random }}"
                         - service: light.turn_off
                           target: !input 'target_light'
+                        - delay:
+                            seconds: "{{ range(0, loop_delay_max * 60) | random }}"
                 - delay:
                     minutes: 1  # Loop delay to prevent high CPU usage
       - conditions:
