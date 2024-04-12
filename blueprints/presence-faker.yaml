@@ -76,37 +76,37 @@ blueprint:
     morning_duration_min:
       name: Minimum Morning Duration
       description: Minimum duration each morning light cycle lasts (in minutes).
-      default: 5
-      selector:
-        number:
-          min: 5
-          max: 120
-          unit_of_measurement: "minuten"
-    morning_duration_max:
-      name: Maximum Morning Duration
-      description: Maximum duration each morning light cycle lasts (in minutes).
       default: 15
       selector:
         number:
-          min: 15
+          min: 5
+          max: 180
+          unit_of_measurement: "minutes"
+    morning_duration_max:
+      name: Maximum Morning Duration
+      description: Maximum duration each morning light cycle lasts (in minutes).
+      default: 60
+      selector:
+        number:
+          min: 5
           max: 180
           unit_of_measurement: "minutes"
     evening_duration_min:
       name: Minimum Evening Duration
       description: Minimum duration each evening light cycle lasts (in minutes).
-      default: 5
+      default: 15
       selector:
         number:
           min: 5
-          max: 120
+          max: 180
           unit_of_measurement: "minutes"
     evening_duration_max:
       name: Maximum Evening Duration
       description: Maximum duration each evening light cycle lasts (in minutes).
-      default: 15
+      default: 60
       selector:
         number:
-          min: 15
+          min: 5
           max: 180
           unit_of_measurement: "minutes"
     night_duration_min:
@@ -116,7 +116,7 @@ blueprint:
       selector:
         number:
           min: 1
-          max: 3
+          max: 30
           unit_of_measurement: "minutes"
     night_duration_max:
       name: Maximum Night Duration
@@ -124,7 +124,7 @@ blueprint:
       default: 10
       selector:
         number:
-          min: 5
+          min: 1
           max: 30
           unit_of_measurement: "minutes"
     automation_enabled:
