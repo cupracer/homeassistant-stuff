@@ -182,7 +182,8 @@ condition: []
 
 action:
   - choose:
-      - conditions:
+      - alias: "Check if the automation should run"
+        conditions:
           - condition: template
             value_template: "{{ is_state(automation_enabled, 'on') }}"
         sequence:
@@ -192,9 +193,12 @@ action:
                   value_template: "{{ is_state(automation_enabled, 'on') }}"
               sequence:
                 - choose:
-                    - conditions:
+                    - alias: "Check if now() is within the morning time range AND if shade positions are <= the desired position (or not defined at all)"
+                      conditions:
                         - condition: template
                           value_template: "{{ now() > (today_at(morning_start) - timedelta(seconds=(timing_variation * 60))) and now() < (today_at(morning_end) + timedelta(seconds=(timing_variation * 60))) }}"
+                        - condition: template
+                          value_template: "{{ shades_entities.entity_id | length == 0 or (expand(shades_entities.entity_id) | map(attribute='attributes.current_position') | map('int') | select('<=', shades_position) | list | count == expand(shades_entities.entity_id) | count) }}"
                       sequence:
                         - delay:
                             seconds: "{{ range(0, start_delay_max * 60) | random }}"
@@ -206,7 +210,8 @@ action:
                             seconds: "{{ range(morning_duration_min * 60, morning_duration_max * 60) | random }}"
                         - service: light.turn_off
                           target: !input 'target_light'
-                    - conditions:
+                    - alias: "Check if now() is within the evening time range AND if shade positions are <= the desired position (or not defined at all)"
+                      conditions:
                         - condition: template
                           value_template: "{{ now() > (today_at(evening_start) - timedelta(seconds=(timing_variation * 60))) and now() < (today_at(evening_end) + timedelta(seconds=(timing_variation * 60))) }}"
                       sequence:
@@ -220,7 +225,8 @@ action:
                             seconds: "{{ range(evening_duration_min * 60, evening_duration_max * 60) | random }}"
                         - service: light.turn_off
                           target: !input 'target_light'
-                    - conditions:
+                    - alias: "Check if now() is within the night time range AND if shade positions are <= the desired position (or not defined at all)"
+                      conditions:
                         - condition: template
                           value_template: "{{ now() > (today_at(night_start) - timedelta(seconds=(timing_variation * 60))) and now() < (today_at(night_end) + timedelta(seconds=(timing_variation * 60))) }}"
                       sequence:
@@ -235,7 +241,7 @@ action:
                         - service: light.turn_off
                           target: !input 'target_light'
                 - delay:
-                    seconds: 1  # Loop delay to prevent high CPU usage
+                    minutes: 1  # Loop delay to prevent high CPU usage
       - conditions:
           - condition: template
             value_template: "{{ is_state(automation_enabled, 'off') }}"
