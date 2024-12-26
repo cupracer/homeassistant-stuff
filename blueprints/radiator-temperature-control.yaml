@@ -62,10 +62,15 @@ action:
             entity_id: !input "contact_entity"
             state: "on"
             for: !input "open_delay"
+        sequence:
+          - service: homematicip_local.get_device_value
+            data:
+              device_address: "{{ climate_address }}"
+              channel: 1
+              parameter: WINDOW_STATE
           - condition: template
             value_template: >
-              {{ state_attr(climate_target, 'WINDOW_STATE') | int != 1 }}
-        sequence:
+              {{ trigger.event.data.value | int != 1 }}
           - service: homematicip_local.set_device_value
             data:
               device_address: "{{ climate_address }}"
@@ -78,10 +83,15 @@ action:
             entity_id: !input "contact_entity"
             state: "off"
             for: !input "close_delay"
+        sequence:
+          - service: homematicip_local.get_device_value
+            data:
+              device_address: "{{ climate_address }}"
+              channel: 1
+              parameter: WINDOW_STATE
           - condition: template
             value_template: >
-              {{ state_attr(climate_target, 'WINDOW_STATE') | int != 0 }}
-        sequence:
+              {{ trigger.event.data.value | int != 0 }}
           - service: homematicip_local.set_device_value
             data:
               device_address: "{{ climate_address }}"
