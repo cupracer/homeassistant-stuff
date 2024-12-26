@@ -46,6 +46,7 @@ blueprint:
 variables:
   climate_target: !input climate_entity
   climate_address: '{{ state_attr( climate_target, "address").split(":")[0] }}'
+  contact_entity: !input contact_entity
   open_delay: !input open_delay
   close_delay: !input close_delay
 
