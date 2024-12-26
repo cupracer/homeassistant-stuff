@@ -1,0 +1,95 @@
+blueprint:
+  name: Radiator Temperature Control
+  description: Adjusts radiator temperature based on window state.
+  domain: automation
+
+  input:
+    contact_entity:
+      name: Contact Sensor
+      description: The contact sensor that will control the climate entity.
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: [window, door]
+
+    open_delay:
+      name: Open Wait Time
+      description: Time to delay after contact opens before notifying HomeMatic.
+      default: 0
+      selector:
+        number:
+          min: 0.0
+          max: 600.0
+          unit_of_measurement: seconds
+          mode: slider
+          step: 1.0
+
+    close_delay:
+      name: Close Wait Time
+      description: Time to delay after contact closes before notifying HomeMatic.
+      default: 0
+      selector:
+        number:
+          min: 0.0
+          max: 600.0
+          unit_of_measurement: seconds
+          mode: slider
+          step: 1.0
+
+    climate_entity:
+      name: Climate Device
+      description: The climate entity that is controlled by the contact sensor.
+      selector:
+        entity:
+          domain: climate
+
+variables:
+  climate_target: !input climate_entity
+  climate_address: '{{ state_attr( climate_target, "address").split(":")[0] }}'
+  open_delay: !input open_delay
+  close_delay: !input close_delay
+
+trigger:
+  - platform: state
+    entity_id: !input "contact_entity"
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input "contact_entity"
+            state: "on"
+            for: !input "open_delay"
+          - condition: template
+            value_template: >
+              {{ state_attr(climate_target, 'WINDOW_STATE') | int != 1 }}
+        sequence:
+          - service: homematicip_local.set_device_value
+            data:
+              device_address: "{{ climate_address }}"
+              channel: 1
+              parameter: WINDOW_STATE
+              value: "1"
+              value_type: int
+      - conditions:
+          - condition: state
+            entity_id: !input "contact_entity"
+            state: "off"
+            for: !input "close_delay"
+          - condition: template
+            value_template: >
+              {{ state_attr(climate_target, 'WINDOW_STATE') | int != 0 }}
+        sequence:
+          - service: homematicip_local.set_device_value
+            data:
+              device_address: "{{ climate_address }}"
+              channel: 1
+              parameter: WINDOW_STATE
+              value: "0"
+              value_type: int
+
+mode: restart
+max_exceeded: silent
+
