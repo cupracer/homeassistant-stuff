@@ -65,8 +65,8 @@ action:
               {{ trigger.platform == "homeassistant" }}
         sequence:
           - wait_template: >
-              {{ states(!input "contact_entity") != "unknown" and
-                 states(!input "climate_entity") != "unavailable" }}
+              {{ states(contact_entity) != "unknown" and
+                 states(climate_entity) != "unavailable" }}
             timeout: "00:01:00"  # Maximal eine Minute warten
             continue_on_timeout: false
           - service: homematicip_local.get_device_value
