@@ -52,16 +52,63 @@ variables:
 trigger:
   - platform: state
     entity_id: !input "contact_entity"
+  - platform: homeassistant
+    event: start
 
 condition: []
 
 action:
   - choose:
       - conditions:
+          - condition: template
+            value_template: >
+              {{ trigger.platform == "homeassistant" }}
+        sequence:
+          - wait_template: >
+              {{ states(!input "contact_entity") != "unknown" and
+                 states(!input "climate_entity") != "unavailable" }}
+            timeout: "00:01:00"  # Maximal eine Minute warten
+            continue_on_timeout: false
+          - service: homematicip_local.get_device_value
+            data:
+              device_address: "{{ climate_address }}"
+              channel: 1
+              parameter: WINDOW_STATE
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: !input "contact_entity"
+                    state: "on"
+                  - condition: template
+                    value_template: >
+                      {{ trigger.event.data.value | int != 1 }}
+                sequence:
+                  - service: homematicip_local.set_device_value
+                    data:
+                      device_address: "{{ climate_address }}"
+                      channel: 1
+                      parameter: WINDOW_STATE
+                      value: "1"
+                      value_type: int
+              - conditions:
+                  - condition: state
+                    entity_id: !input "contact_entity"
+                    state: "off"
+                  - condition: template
+                    value_template: >
+                      {{ trigger.event.data.value | int != 0 }}
+                sequence:
+                  - service: homematicip_local.set_device_value
+                    data:
+                      device_address: "{{ climate_address }}"
+                      channel: 1
+                      parameter: WINDOW_STATE
+                      value: "0"
+                      value_type: int
+      - conditions:
           - condition: state
             entity_id: !input "contact_entity"
             state: "on"
-            for: !input "open_delay"
         sequence:
           - service: homematicip_local.get_device_value
             data:
@@ -82,7 +129,6 @@ action:
           - condition: state
             entity_id: !input "contact_entity"
             state: "off"
-            for: !input "close_delay"
         sequence:
           - service: homematicip_local.get_device_value
             data:
