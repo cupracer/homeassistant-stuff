@@ -1,8 +1,21 @@
 blueprint:
-  name: Radiator Temperature Control
-  description: Adjusts radiator temperature based on window state.
-  domain: automation
+  name: Control radiator temperature with closure
+  description:
+    An automation blueprint that adjusts the set temperature of your climate device or group
+    based on the state of a contact sensor. When a contact sensor is opened, the temperature is lowered 
+    to the "open window temperature" specified in the device configuration. Once the contact sensor is 
+    closed again, the temperature is reset to its previous value.
 
+    This blueprint utilizes the Homematic window sensor channel to ensure precise temperature 
+    adjustments. To avoid conflicts, it is recommended to set the "Mode for temperature fall detection" 
+    to Inactive. 
+
+    Additionally, there's an optional blocking entity to prevent the automation from running 
+    unnecessarily, such as during the summer season. This feature is currently commented out in the 
+    code but can be activated if needed.
+  domain: automation
+  source_url: https://github.com/cupracer/homeassistant-stuff/blueprints/radiator-temperature-control.yaml
+  
   input:
     contact_entity:
       name: Contact Sensor
@@ -11,30 +24,6 @@ blueprint:
         entity:
           domain: binary_sensor
           device_class: [window, door]
-
-    open_delay:
-      name: Open Wait Time
-      description: Time to delay after contact opens before notifying HomeMatic.
-      default: 0
-      selector:
-        number:
-          min: 0.0
-          max: 600.0
-          unit_of_measurement: seconds
-          mode: slider
-          step: 1.0
-
-    close_delay:
-      name: Close Wait Time
-      description: Time to delay after contact closes before notifying HomeMatic.
-      default: 0
-      selector:
-        number:
-          min: 0.0
-          max: 600.0
-          unit_of_measurement: seconds
-          mode: slider
-          step: 1.0
 
     climate_entity:
       name: Climate Device
@@ -46,79 +35,18 @@ blueprint:
 variables:
   climate_target: !input climate_entity
   climate_address: '{{ state_attr( climate_target, "address").split(":")[0] }}'
-  contact_entity: !input contact_entity
-  open_delay: !input open_delay
-  close_delay: !input close_delay
 
 trigger:
   - platform: state
     entity_id: !input "contact_entity"
-  - platform: homeassistant
-    event: start
-
-condition: []
 
 action:
   - choose:
       - conditions:
-          - condition: template
-            value_template: >
-              {{ trigger.platform == "homeassistant" }}
-        sequence:
-          - wait_template: >
-              {{ states(contact_entity) != "unknown" and
-                 states(climate_entity) != "unavailable" }}
-            timeout: "00:01:00"  # Maximal eine Minute warten
-            continue_on_timeout: false
-          - service: homematicip_local.get_device_value
-            data:
-              device_address: "{{ climate_address }}"
-              channel: 1
-              parameter: WINDOW_STATE
-          - choose:
-              - conditions:
-                  - condition: state
-                    entity_id: !input "contact_entity"
-                    state: "on"
-                  - condition: template
-                    value_template: >
-                      {{ trigger.event.data.value | int != 1 }}
-                sequence:
-                  - service: homematicip_local.set_device_value
-                    data:
-                      device_address: "{{ climate_address }}"
-                      channel: 1
-                      parameter: WINDOW_STATE
-                      value: "1"
-                      value_type: int
-              - conditions:
-                  - condition: state
-                    entity_id: !input "contact_entity"
-                    state: "off"
-                  - condition: template
-                    value_template: >
-                      {{ trigger.event.data.value | int != 0 }}
-                sequence:
-                  - service: homematicip_local.set_device_value
-                    data:
-                      device_address: "{{ climate_address }}"
-                      channel: 1
-                      parameter: WINDOW_STATE
-                      value: "0"
-                      value_type: int
-      - conditions:
           - condition: state
-            entity_id: !input "contact_entity"
+            entity_id: !input window_sensor
             state: "on"
         sequence:
-          - service: homematicip_local.get_device_value
-            data:
-              device_address: "{{ climate_address }}"
-              channel: 1
-              parameter: WINDOW_STATE
-          - condition: template
-            value_template: >
-              {{ trigger.event.data.value | int != 1 }}
           - service: homematicip_local.set_device_value
             data:
               device_address: "{{ climate_address }}"
@@ -128,17 +56,9 @@ action:
               value_type: int
       - conditions:
           - condition: state
-            entity_id: !input "contact_entity"
+            entity_id: !input window_sensor
             state: "off"
         sequence:
-          - service: homematicip_local.get_device_value
-            data:
-              device_address: "{{ climate_address }}"
-              channel: 1
-              parameter: WINDOW_STATE
-          - condition: template
-            value_template: >
-              {{ trigger.event.data.value | int != 0 }}
           - service: homematicip_local.set_device_value
             data:
               device_address: "{{ climate_address }}"
